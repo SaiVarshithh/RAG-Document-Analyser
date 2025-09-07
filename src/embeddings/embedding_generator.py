@@ -2,15 +2,25 @@
 Embedding generation for text chunks using sentence transformers.
 """
 import os
+import json
+import hashlib
 import pickle
 from typing import List, Dict, Any, Optional
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from loguru import logger
 import torch
 
+from ..chunking.text_chunker import TextChunk
 from config import config
-from src.chunking.text_chunker import TextChunk
+
+# Try importing sentence_transformers with fallback
+try:
+    from sentence_transformers import SentenceTransformer
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"SentenceTransformers not available: {e}")
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    SentenceTransformer = None
 
 
 class EmbeddingGenerator:
@@ -28,6 +38,10 @@ class EmbeddingGenerator:
         
     def _load_model(self):
         """Load the sentence transformer model."""
+        if not SENTENCE_TRANSFORMERS_AVAILABLE:
+            logger.error("SentenceTransformers library not available")
+            raise ImportError("SentenceTransformers library is required but not available")
+            
         try:
             logger.info(f"Loading embedding model: {self.model_name}")
             
