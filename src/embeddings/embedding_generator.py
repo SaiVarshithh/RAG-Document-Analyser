@@ -30,18 +30,23 @@ class EmbeddingGenerator:
         """Load the sentence transformer model."""
         try:
             logger.info(f"Loading embedding model: {self.model_name}")
-            self.model = SentenceTransformer(self.model_name)
             
-            # Check if CUDA is available
-            if torch.cuda.is_available():
-                self.model = self.model.cuda()
-                logger.info("Using CUDA for embeddings")
-            else:
-                logger.info("Using CPU for embeddings")
+            # Load model with device_map to avoid meta tensor issues
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.model = SentenceTransformer(self.model_name, device=device)
+            
+            logger.info(f"Using {device.upper()} for embeddings")
                 
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
-            raise
+            # Fallback: try loading without device specification
+            try:
+                logger.info("Attempting fallback model loading...")
+                self.model = SentenceTransformer(self.model_name)
+                logger.info("Fallback model loading successful")
+            except Exception as e2:
+                logger.error(f"Fallback model loading also failed: {e2}")
+                raise
     
     def generate_embeddings(self, chunks: List[TextChunk]) -> List[Dict[str, Any]]:
         """
