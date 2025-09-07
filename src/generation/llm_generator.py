@@ -81,37 +81,27 @@ class LLMGenerator:
     def _create_prompt_template(self) -> PromptTemplate:
         """Create the prompt template for the RAG chain with conversational memory."""
         template = """
-        You are a document analysis assistant. You must ONLY answer based on the provided context below.
+        You are a precise document analysis assistant. Your ONLY job is to extract and present information from the provided document context.
 
-        CRITICAL RULES:
-        1. ONLY use information from the CONTEXT provided below
-        2. DO NOT use any external knowledge, training data, or general information
-        3. If the CONTEXT contains relevant information, answer directly from it WITHOUT any recommendations
-        4. If the CONTEXT does not contain ANY relevant information to answer the question:
-            - If the input appears to be casual conversation (greetings, acknowledgments, small talk), respond naturally and conversationally
-            - If the input is a genuine question but no relevant information is found, respond:
-                "I'm sorry, but I could not find any relevant information about that in the provided documents."
-                Then suggest 2-3 relevant questions based on the available content
-        5. DO NOT provide any information that is not explicitly stated in the CONTEXT
-        6. DO NOT add general knowledge or explanations beyond what is in the CONTEXT
-        7. DO NOT give recommendations when you CAN answer from the context
-        8. Use the CHAT HISTORY to understand context and follow-up questions, but still only answer from the CONTEXT
+        STRICT RULES:
+        1. ANSWER ONLY from the CONTEXT provided below - never use external knowledge
+        2. If the CONTEXT contains information relevant to the question, extract and present it directly
+        3. Be comprehensive - if the context has detailed information, provide all relevant details
+        4. For document analysis requests (like "list terms and conditions"), extract ALL relevant items from the context
+        5. Format your response clearly with bullet points, numbers, or structured format when appropriate
+        6. If NO relevant information exists in the context, only then say: "I could not find relevant information about that in the provided documents."
+        7. DO NOT suggest alternative questions unless absolutely no relevant content exists
+        8. DO NOT add explanations, interpretations, or external knowledge beyond what's in the context
 
-        SELECTED DOCUMENTS:
-        {selected_documents}
-
-        CHAT HISTORY:
-        {chat_history}
-
-        CONTEXT:
+        CONTEXT FROM DOCUMENTS:
         {context}
 
-        CURRENT QUESTION:
+        USER QUESTION:
         {question}
 
-        ANSWER (based STRICTLY on the context above, considering chat history for better understanding):
+        RESPONSE (extract directly from context above):
         """
-        return PromptTemplate(template=template, input_variables=["context", "question", "chat_history", "selected_documents"])
+        return PromptTemplate(template=template, input_variables=["context", "question"])
 
     def _format_context(self, retrieved_chunks: List[Dict[str, Any]]) -> str:
         """Format the retrieved chunks into a string for the prompt."""
@@ -144,16 +134,11 @@ class LLMGenerator:
 
         formatted_context = self._format_context(retrieved_chunks)
         
-        # Format selected documents
-        selected_docs_str = ", ".join(selected_documents) if selected_documents else "All documents"
-        
-        # Create the RAG chain using LangChain Expression Language (LCEL) with conversational memory
+        # Create the RAG chain using simplified prompt template
         rag_chain = (
             {
                 "context": (lambda x: formatted_context), 
-                "question": RunnablePassthrough(),
-                "chat_history": (lambda x: chat_history),
-                "selected_documents": (lambda x: selected_docs_str)
+                "question": RunnablePassthrough()
             }
             | self.prompt_template
             | self.llm

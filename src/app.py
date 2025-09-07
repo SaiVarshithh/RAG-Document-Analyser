@@ -104,17 +104,19 @@ class RAGSystem:
         # 1. Generate query embedding
         query_embedding = self.embedder.generate_query_embedding(query)
 
-        # 2. Retrieve relevant chunks with higher coverage for comprehensive answers
+        # 2. Retrieve relevant chunks with maximum coverage for comprehensive answers
         retrieved_chunks = self.vector_store_manager.search_similar(
             query_embedding, k=top_k, document_filter=selected_documents
         )
         
-        # If we don't find enough chunks, try a broader search
-        if len(retrieved_chunks) < 5:
-            logger.info(f"Only found {len(retrieved_chunks)} chunks, trying broader search")
-            retrieved_chunks = self.vector_store_manager.search_similar(
-                query_embedding, k=top_k * 2, document_filter=selected_documents
-            )
+        # Always try broader search to ensure we capture all relevant content
+        logger.info(f"Initial search found {len(retrieved_chunks)} chunks, trying broader search")
+        broader_chunks = self.vector_store_manager.search_similar(
+            query_embedding, k=top_k * 3, document_filter=selected_documents
+        )
+        
+        # Use the broader search results for better coverage
+        retrieved_chunks = broader_chunks if len(broader_chunks) > len(retrieved_chunks) else retrieved_chunks
         logger.info(f"Retrieved {len(retrieved_chunks)} relevant chunks.")
 
         # 3. Generate response with conversational memory - always call LLM even with empty chunks
