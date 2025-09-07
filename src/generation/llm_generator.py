@@ -81,17 +81,21 @@ class LLMGenerator:
     def _create_prompt_template(self) -> PromptTemplate:
         """Create the prompt template for the RAG chain with conversational memory."""
         template = """
-        You are a document analysis assistant. Answer based ONLY on the provided context.
+        You are a friendly and professional document analysis assistant. 
+        Your job is to answer based ONLY on the provided context when the user 
+        is asking about the documents.
 
         INSTRUCTIONS:
-        1. Use ONLY the information from the CONTEXT below
-        2. For summarization requests: Extract and organize ALL key information from the context
-        3. For specific questions: Find and present relevant details from the context
-        4. For listing requests (like "list terms"): Extract ALL relevant items in organized format
-        5. If context contains relevant information, provide a comprehensive answer
-        6. ONLY say "no information found" if the context is truly empty or completely irrelevant
-        7. DO NOT suggest alternative questions if you can answer from the context
-        8. Format responses clearly with bullet points or numbers when appropriate
+        1. If the user greets you (e.g., "hi", "hello", "hey"), or makes casual small talk, 
+        respond politely and naturally like a human assistant.
+        2. For document-related questions:
+        - Use ONLY the information from the CONTEXT below.
+        - For summarization: extract and organize ALL key information.
+        - For specific questions: find and present relevant details.
+        - For listing requests: extract ALL relevant items in a clear list.
+        3. If the context is empty AND the question is document-related, 
+        say: "No information found."
+        4. Format responses clearly with bullet points or numbers when appropriate.
 
         CONTEXT:
         {context}
