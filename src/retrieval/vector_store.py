@@ -101,8 +101,8 @@ class FAISSVectorStore(VectorStore):
                     if not any(doc_name in source_file for doc_name in document_filter):
                         continue
                 
-                # Include results with very low similarity threshold for maximum coverage
-                if float(score) > 0.05:  # Extremely permissive threshold
+                # Include results with lower similarity threshold for better coverage
+                if float(score) > 0.1:  # Very permissive threshold
                     results.append((metadata, float(score)))
                 
                 # Stop when we have enough results
