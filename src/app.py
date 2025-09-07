@@ -104,16 +104,16 @@ class RAGSystem:
         # 1. Generate query embedding
         query_embedding = self.embedder.generate_query_embedding(query)
 
-        # 2. Retrieve relevant chunks with higher coverage for comprehensive answers
+        # 2. Retrieve relevant chunks with maximum coverage for summarization and analysis
         retrieved_chunks = self.vector_store_manager.search_similar(
-            query_embedding, k=top_k, document_filter=selected_documents
+            query_embedding, k=top_k * 3, document_filter=selected_documents
         )
         
-        # If we don't find enough chunks, try a broader search
-        if len(retrieved_chunks) < 5:
-            logger.info(f"Only found {len(retrieved_chunks)} chunks, trying broader search")
+        # For summarization requests, get even more chunks
+        if any(word in query.lower() for word in ['summarize', 'summary', 'overview', 'list', 'all']):
+            logger.info("Detected summarization/listing request, retrieving more chunks")
             retrieved_chunks = self.vector_store_manager.search_similar(
-                query_embedding, k=top_k * 2, document_filter=selected_documents
+                query_embedding, k=top_k * 5, document_filter=selected_documents
             )
         logger.info(f"Retrieved {len(retrieved_chunks)} relevant chunks.")
 
