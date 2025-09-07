@@ -75,6 +75,7 @@ streamlit run streamlit_app.py
 
 2. **Access the interface**:
    - Open your browser to `http://localhost:8501`
+   - Add Google API Key in the sidebar and configure the LLM
    - Upload your documents using the sidebar
    - Click "Process Documents" to index them
    - Start asking questions in the chat interface
