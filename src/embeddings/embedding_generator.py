@@ -31,22 +31,27 @@ class EmbeddingGenerator:
         try:
             logger.info(f"Loading embedding model: {self.model_name}")
             
-            # Load model with device_map to avoid meta tensor issues
+            # Try loading with device specification first
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            self.model = SentenceTransformer(self.model_name, device=device)
-            
-            logger.info(f"Using {device.upper()} for embeddings")
+            try:
+                self.model = SentenceTransformer(self.model_name, device=device)
+                logger.info(f"Using {device.upper()} for embeddings")
+            except Exception as device_error:
+                logger.warning(f"Device-specific loading failed: {device_error}")
+                # Fallback: load without device specification
+                self.model = SentenceTransformer(self.model_name)
+                logger.info("Loaded model without device specification")
                 
         except Exception as e:
-            logger.error(f"Failed to load embedding model: {e}")
-            # Fallback: try loading without device specification
+            logger.error(f"Failed to load embedding model {self.model_name}: {e}")
+            # Final fallback: try a smaller, more compatible model
             try:
-                logger.info("Attempting fallback model loading...")
-                self.model = SentenceTransformer(self.model_name)
+                logger.info("Attempting fallback to all-MiniLM-L6-v2...")
+                self.model = SentenceTransformer('all-MiniLM-L6-v2')
                 logger.info("Fallback model loading successful")
             except Exception as e2:
-                logger.error(f"Fallback model loading also failed: {e2}")
-                raise
+                logger.error(f"All model loading attempts failed: {e2}")
+                raise RuntimeError(f"Could not load any embedding model. Last error: {e2}")
     
     def generate_embeddings(self, chunks: List[TextChunk]) -> List[Dict[str, Any]]:
         """
